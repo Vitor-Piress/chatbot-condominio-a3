@@ -1,0 +1,65 @@
+# ==========================================
+# Variáveis de Ambiente e Segredos (CRÍTICO)
+# ==========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ==========================================
+# Backend (Python / FastAPI / IA)
+# ==========================================
+# Ambientes virtuais
+venv/
+env/
+.venv/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Arquivos compilados e cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Bancos de dados locais (se for testar ChromaDB ou SQLite)
+chroma_db/
+*.db
+*.sqlite3
+
+# ==========================================
+# Frontend (Node.js / React / Vite)
+# ==========================================
+node_modules/
+dist/
+build/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ==========================================
+# Arquivos de Sistema e IDEs
+# ==========================================
+# Windows / Mac
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores (VS Code, Cursor, IntelliJ)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==========================================
+# Logs e Arquivos Temporários
+# ==========================================
+*.log
+tmp/
+temp/
