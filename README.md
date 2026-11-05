@@ -20,20 +20,87 @@ Mensagens fora de escopo (ex: cobranças de boletos), sinais de emergência (ex:
 
 O projeto foi estruturado em um monorepo, separando as responsabilidades de interface, motor de IA e base de conhecimento.
 
-- **Backend / Motor de IA:** Python 3.11, FastAPI, Scikit-learn (TF-IDF para classificação).
-- **Recuperação de Contexto (RAG):** Supabase com extensão `pgvector` para busca por similaridade (Embeddings).
-- **Geração (LLM):** Integração com Groq API (nuvem) / Ollama (local) para redação das respostas.
-- **Frontend:** [React com Vite / Open WebUI] para a interface de conversação.
+- **Backend / Motor de IA:** Python 3.11, FastAPI, scikit-learn (TF-IDF + regressão logística para intenção; similaridade do cosseno para recuperação).
+- **Banco:** PostgreSQL (imagem com `pgvector`), usado pelo Open WebUI e pelo log de decisões do backend. Sem Docker, o backend usa SQLite.
+- **Geração (LLM, opcional):** Groq API. Sem chave, o bot devolve o trecho citado (modo extrativo).
+- **Frontend:** Open WebUI, que enxerga o backend como um "modelo" compatível com OpenAI.
+
+Fluxo: emergência (regex) → pedido de atendimento → fora de escopo (palavras-chave) → classificador de intenção → recuperação dentro da intenção → sanção/exceção → Groq ou trecho citado. Toda decisão é registrada na tabela `decisoes`.
 
 ## 📂 Estrutura do Repositório
 
 ```text
 chatbot-condominio-a3/
 │
-├── backend/               # Motor de IA, RAG, rotas FastAPI e requirements.txt
-├── frontend/              # Interface de chat interativa
-├── dados/                 # Base de conhecimento (Markdown) e datasets de teste (CSV)
-│
-├── .gitignore             # Arquivos ignorados e variáveis de ambiente (.env)
-└── docker-compose.yml     # Orquestração dos containers (Opcional)
+├── backend/
+│   ├── app/
+│   │   ├── main.py            # Rotas FastAPI (/chat, /v1/chat/completions, /admin/reingest)
+│   │   ├── config.py          # Configuração lida do .env
+│   │   ├── db.py              # Log de decisões (RF07)
+│   │   └── pipeline/          # preprocess, rules, classifier, knowledge, retriever, generator, engine
+│   ├── scripts/               # Utilitários (listar modelos da Groq etc.)
+│   ├── tests/
+│   ├── Dockerfile
+│   └── requirements.txt
+├── dados/
+│   ├── regimento.md           # Base de conhecimento (## Capítulo / Art. N)
+│   └── perguntas_rotuladas.csv
+├── docker/postgres/           # Script que cria o banco do backend
+├── .env.example               # Modelo de configuração (copie para .env)
+└── docker-compose.yml         # db + backend + Open WebUI
 ```
+
+## 🚀 Como rodar
+
+### Com Docker (recomendado)
+
+```bash
+cp .env.example .env
+# edite o .env: troque senhas/segredos (openssl rand -hex 32) e, se quiser LLM, preencha GROQ_API_KEY
+docker compose up -d --build
+```
+
+- Open WebUI: http://localhost:3000. **O primeiro usuário cadastrado vira administrador.** Os próximos ficam como "pendente" até o admin aprovar em *Painel de administração → Usuários* (RF09).
+- Backend: http://localhost:8000/docs
+- A primeira subida do Open WebUI demora alguns minutos.
+
+No chat, escolha o modelo `assistente-acacias`.
+
+### Sem Docker (Python 3.11)
+
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload
+```
+
+Sem `DATABASE_URL` no `.env`, o log vai para `backend/decisoes.db` (SQLite).
+
+### Exemplos de chamada
+
+```bash
+curl -s localhost:8000/chat -H "Authorization: Bearer $BACKEND_API_KEY" \
+  -H "Content-Type: application/json" -d '{"mensagem": "Qual o horário de silêncio?"}'
+
+# depois de alterar dados/*.md ou o CSV (RF08):
+curl -s -X POST localhost:8000/admin/reingest -H "Authorization: Bearer $BACKEND_API_KEY"
+```
+
+### Configuração principal (.env)
+
+| Variável | Para que serve |
+| --- | --- |
+| `CHUNK_STRATEGY` | `artigo` ou `caracteres` (1000 com 200 de sobreposição) |
+| `LIMIAR_CLASSIFICADOR` | Confiança mínima da intenção; abaixo disso, pede reformulação |
+| `LIMIAR_SIMILARIDADE` | Similaridade mínima do trecho; abaixo disso, encaminha |
+| `GROQ_API_KEY` / `GROQ_MODEL` | Liga a geração. Liste os modelos com `python backend/scripts/ver_modelos.py` |
+| `ADMIN_CONTATO` | Contato exibido nos encaminhamentos |
+
+### Consultar o log de decisões
+
+```bash
+docker compose exec db psql -U condominio -d chatbot \
+  -c "select criado_em, mensagem, desfecho, intencao, confianca, tempo_ms from decisoes order by id desc limit 20;"
+```
+

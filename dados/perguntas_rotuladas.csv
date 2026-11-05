@@ -1,0 +1,49 @@
+pergunta,intencao,origem
+Qual o horário do salão de festas?,reservas,simulada
+Quanto custa reservar o salão de festas?,reservas,simulada
+Com quanto tempo de antecedência preciso reservar o salão?,reservas,simulada
+Até que horas posso usar o salão de festas?,reservas,simulada
+Como faço para reservar o salão?,reservas,simulada
+Qual a taxa de limpeza do salão?,reservas,simulada
+Posso fazer uma festa no salão até meia-noite?,reservas,simulada
+Qual o horário de funcionamento da piscina?,reservas,simulada
+A piscina abre na segunda-feira?,reservas,simulada
+Pode levar garrafa de vidro na piscina?,reservas,simulada
+Até que horas a piscina fica aberta?,reservas,simulada
+Dá pra reservar o salão para amanhã?,reservas,simulada
+Qual o horário de silêncio?,convivencia,simulada
+Até que horas pode fazer barulho?,convivencia,simulada
+Posso ouvir música alta à noite?,convivencia,simulada
+Posso ter animal de estimação no apartamento?,convivencia,simulada
+Meu cachorro pode andar solto no condomínio?,convivencia,simulada
+Posso levar meu cachorro na piscina?,convivencia,simulada
+Gato é permitido no prédio?,convivencia,simulada
+A partir de que horas começa a lei do silêncio?,convivencia,simulada
+O vizinho pode arrastar móveis de madrugada?,convivencia,simulada
+Preciso usar guia no pet nas áreas comuns?,convivencia,simulada
+Que horas termina o horário de repouso?,convivencia,simulada
+Posso levar meu pet no salão de festas?,convivencia,simulada
+Como agendar uma mudança?,mudancas_obras,simulada
+Em que horário posso fazer obra no apartamento?,mudancas_obras,simulada
+Posso fazer mudança no domingo?,mudancas_obras,simulada
+Pode fazer obra no sábado?,mudancas_obras,simulada
+Qual o horário permitido para reforma?,mudancas_obras,simulada
+Preciso avisar a administração antes de fazer obra?,mudancas_obras,simulada
+Posso furar a parede no feriado?,mudancas_obras,simulada
+Até que horas pode ter barulho de obra no sábado?,mudancas_obras,simulada
+"Vou me mudar semana que vem, o que preciso fazer?",mudancas_obras,simulada
+Pode fazer mudança à noite?,mudancas_obras,simulada
+O pedreiro pode trabalhar no domingo?,mudancas_obras,simulada
+Qual o horário da mudança durante a semana?,mudancas_obras,simulada
+Quantas vagas de visitante tem no condomínio?,garagem_servicos,simulada
+Quanto tempo o visitante pode ficar na vaga?,garagem_servicos,simulada
+Quando o lixo é coletado?,garagem_servicos,simulada
+Em que dia passa a coleta de reciclável?,garagem_servicos,simulada
+Meu visitante pode estacionar dentro do condomínio?,garagem_servicos,simulada
+Qual o dia da coleta do lixo orgânico?,garagem_servicos,simulada
+Tem vaga para visita na garagem?,garagem_servicos,simulada
+O lixo passa na segunda-feira?,garagem_servicos,simulada
+Posso deixar o carro do meu amigo na vaga de visitante a noite toda?,garagem_servicos,simulada
+Onde descarto o lixo reciclável e quando recolhem?,garagem_servicos,simulada
+Quantas horas pode ficar na vaga de visitante?,garagem_servicos,simulada
+A coleta de lixo é feita todo dia?,garagem_servicos,simulada
