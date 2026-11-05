@@ -47,3 +47,35 @@ Posso deixar o carro do meu amigo na vaga de visitante a noite toda?,garagem_ser
 Onde descarto o lixo reciclável e quando recolhem?,garagem_servicos,simulada
 Quantas horas pode ficar na vaga de visitante?,garagem_servicos,simulada
 A coleta de lixo é feita todo dia?,garagem_servicos,simulada
+O salão de festas precisa ser reservado com quantos dias?,reservas,simulada
+Tem que pagar alguma taxa para usar o salão?,reservas,simulada
+A que horas o salão precisa estar vazio?,reservas,simulada
+"Quero fazer aniversário no salão, como funciona?",reservas,simulada
+A piscina funciona todos os dias?,reservas,simulada
+Que horas abre a piscina?,reservas,simulada
+Posso usar copo de vidro na área da piscina?,reservas,simulada
+Qual o valor para alugar o salão de festas?,reservas,simulada
+Lei do silêncio começa que horas?,convivencia,simulada
+Pode fazer barulho depois das 22h?,convivencia,simulada
+"Meu vizinho está com som alto de madrugada, pode?",convivencia,simulada
+É permitido ter cachorro grande?,convivencia,simulada
+Posso passear com meu gato no hall sem guia?,convivencia,simulada
+Animais podem ficar no salão de festas?,convivencia,simulada
+Que horas posso ligar o som alto?,convivencia,simulada
+Pet pode subir no elevador no colo?,convivencia,simulada
+Posso reformar o banheiro no fim de semana?,mudancas_obras,simulada
+Precisa agendar a mudança com a administração?,mudancas_obras,simulada
+Qual horário o caminhão de mudança pode entrar?,mudancas_obras,simulada
+Obra no feriado é permitida?,mudancas_obras,simulada
+Até que horas o pedreiro pode trabalhar durante a semana?,mudancas_obras,simulada
+Posso quebrar parede no sábado à tarde?,mudancas_obras,simulada
+Como funciona a mudança no sábado?,mudancas_obras,simulada
+Preciso de autorização para reformar o apartamento?,mudancas_obras,simulada
+Onde meu visitante pode parar o carro?,garagem_servicos,simulada
+Quantos carros de visita cabem na garagem?,garagem_servicos,simulada
+Visitante pode dormir com o carro na vaga?,garagem_servicos,simulada
+Qual dia recolhem o lixo reciclável?,garagem_servicos,simulada
+Lixo orgânico é recolhido em quais dias?,garagem_servicos,simulada
+Tem coleta de lixo no domingo?,garagem_servicos,simulada
+Por quanto tempo a visita pode deixar o carro estacionado?,garagem_servicos,simulada
+Quarta-feira tem coleta de quê?,garagem_servicos,simulada

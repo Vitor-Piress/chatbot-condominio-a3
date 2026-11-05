@@ -5,13 +5,13 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
-from .preprocess import preprocessar
+from .features import vetorizador_hibrido
+from .preprocess import expandir, preprocessar
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +32,8 @@ def carregar_exemplos(csv_path: Path) -> list[Exemplo]:
 
 
 class ClassificadorIntencao:
-    def __init__(self, seed: int = 42):
+    def __init__(self, sinonimos: dict[str, str] | None = None, seed: int = 42):
+        self.sinonimos = sinonimos or {}
         self.seed = seed
         self.modelo: Pipeline | None = None
         self.acuracia_validacao: float | None = None
@@ -41,13 +42,16 @@ class ClassificadorIntencao:
     def _novo_modelo(self) -> Pipeline:
         return Pipeline(
             [
-                ("tfidf", TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True)),
+                ("tfidf", vetorizador_hibrido()),
                 ("clf", LogisticRegression(max_iter=1000, C=10.0, random_state=self.seed)),
             ]
         )
 
+    def _prep(self, texto: str) -> str:
+        return preprocessar(expandir(texto, self.sinonimos))
+
     def treinar(self, exemplos: list[Exemplo], frac_validacao: float = 0.3) -> None:
-        X = [preprocessar(e.pergunta) for e in exemplos]
+        X = [self._prep(e.pergunta) for e in exemplos]
         y = [e.intencao for e in exemplos]
 
         X_tr, X_val, y_tr, y_val = train_test_split(
@@ -65,6 +69,6 @@ class ClassificadorIntencao:
     def prever(self, texto: str) -> tuple[str, float]:
         if self.modelo is None:
             raise RuntimeError("Classificador não treinado")
-        probs = self.modelo.predict_proba([preprocessar(texto)])[0]
+        probs = self.modelo.predict_proba([self._prep(texto)])[0]
         idx = int(probs.argmax())
         return str(self.modelo.classes_[idx]), float(probs[idx])

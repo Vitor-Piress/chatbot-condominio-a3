@@ -1,7 +1,15 @@
+# rotação dos logs de stdout dos contêineres (docker compose logs)
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -19,14 +27,21 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        INSTALL_EMBEDDINGS: ${INSTALL_EMBEDDINGS:-false}
     restart: unless-stopped
+    logging: *logging
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_CHATBOT_DB}
       DADOS_DIR: /dados
+      LOG_DIR: /app/logs
+      CHROMA_DIR: /app/chroma_db
     volumes:
       - ./dados:/dados:ro
+      - ./logs:/app/logs
       - ./chroma_db:/app/chroma_db
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -42,6 +57,7 @@ services:
   openwebui:
     image: ghcr.io/open-webui/open-webui:${OPENWEBUI_TAG:-main}
     restart: unless-stopped
+    logging: *logging
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_OPENWEBUI_DB}
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
@@ -51,6 +67,8 @@ services:
       ENABLE_OPENAI_API: "true"
       OPENAI_API_BASE_URL: http://backend:8000/v1
       OPENAI_API_KEY: ${BACKEND_API_KEY}
+      # envia X-OpenWebUI-User-Id / Chat-Id ao backend (o log guarda só os ids, não nome/e-mail)
+      ENABLE_FORWARD_USER_INFO_HEADERS: "true"
       # RF09: cadastro aberto, mas novos usuários ficam pendentes até o admin aprovar.
       # O primeiro usuário cadastrado vira administrador.
       ENABLE_SIGNUP: "true"

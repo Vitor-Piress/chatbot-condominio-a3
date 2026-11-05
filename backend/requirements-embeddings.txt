@@ -1,0 +1,5 @@
+# Opcional: experimento de recuperação por embeddings (RETRIEVER=embeddings)
+# Instale com o PyTorch CPU para não baixar as bibliotecas de GPU:
+#   pip install -r requirements-embeddings.txt --extra-index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==3.3.1
+chromadb==0.6.3

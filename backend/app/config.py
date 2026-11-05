@@ -2,6 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -18,12 +19,15 @@ class Settings(BaseSettings):
     backend_api_key: str = ""
     dados_dir: Path = BACKEND_DIR.parent / "dados"
 
+    retriever: Literal["tfidf", "embeddings"] = "tfidf"
+    chroma_dir: Path = BACKEND_DIR / "chroma_db"
+
     chunk_strategy: Literal["artigo", "caracteres"] = "artigo"
     chunk_tamanho: int = 1000
     chunk_sobreposicao: int = 200
 
-    limiar_classificador: float = 0.35
-    limiar_similaridade: float = 0.10
+    limiar_classificador: float = 0.45
+    limiar_similaridade: float = 0.08
     top_k: int = 3
     turnos_contexto: int = 3
 
@@ -35,6 +39,25 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 15.0
 
     modelo_id: str = "assistente-acacias"
+
+    # observabilidade
+    log_level: str = "INFO"
+    log_format: Literal["texto", "json"] = "texto"  # formato do stdout; arquivos são sempre JSON
+    log_dir: Path | None = BACKEND_DIR / "logs"  # vazio desliga os arquivos
+    # grava o texto das mensagens nos logs (desligue se for usar dados reais)
+    log_mensagens: bool = True
+
+    @field_validator("log_dir", mode="before")
+    @classmethod
+    def _log_dir_vazio(cls, v):
+        return None if v in ("", None) else v
+
+    @property
+    def log_path(self) -> Path | None:
+        if self.log_dir is None:
+            return None
+        p = Path(self.log_dir)
+        return p if p.is_absolute() else (BACKEND_DIR / p).resolve()
 
     @property
     def dados_path(self) -> Path:

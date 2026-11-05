@@ -36,16 +36,25 @@ chatbot-condominio-a3/
 │   ├── app/
 │   │   ├── main.py            # Rotas FastAPI (/chat, /v1/chat/completions, /admin/reingest)
 │   │   ├── config.py          # Configuração lida do .env
-│   │   ├── db.py              # Log de decisões (RF07)
-│   │   └── pipeline/          # preprocess, rules, classifier, knowledge, retriever, generator, engine
-│   ├── scripts/               # Utilitários (listar modelos da Groq etc.)
+│   │   ├── db.py              # Log de decisões no banco (RF07)
+│   │   ├── observability.py   # Logs estruturados: stdout + logs/app.log + logs/decisoes.jsonl
+│   │   ├── monitoring.py      # Métricas agregadas (API e análise offline)
+│   │   ├── static/painel.html # Painel de monitoramento (/painel)
+│   │   └── pipeline/          # preprocess, rules, features, classifier, knowledge, retriever, generator, engine
+│   ├── scripts/
+│   │   ├── avaliar.py         # Roda os 24 casos de teste e calcula as métricas do PRD
+│   │   ├── analisar_logs.py   # Resume/exporta logs/decisoes.jsonl
+│   │   └── ver_modelos.py     # Lista os modelos liberados na Groq
 │   ├── tests/
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── dados/
 │   ├── regimento.md           # Base de conhecimento (## Capítulo / Art. N)
-│   └── perguntas_rotuladas.csv
+│   ├── perguntas_rotuladas.csv # 80 perguntas (20 por intenção) para treino/validação
+│   ├── sinonimos.csv          # Expansão de consulta (ex.: barulho -> silêncio sossego)
+│   └── casos_teste.csv        # 24 casos de teste (seção 6 do PRD), nunca usados no treino
 ├── docker/postgres/           # Script que cria o banco do backend
+├── logs/                      # Gerado em execução (fora do Git)
 ├── .env.example               # Modelo de configuração (copie para .env)
 └── docker-compose.yml         # db + backend + Open WebUI
 ```
@@ -96,6 +105,56 @@ curl -s -X POST localhost:8000/admin/reingest -H "Authorization: Bearer $BACKEND
 | `LIMIAR_SIMILARIDADE` | Similaridade mínima do trecho; abaixo disso, encaminha |
 | `GROQ_API_KEY` / `GROQ_MODEL` | Liga a geração. Liste os modelos com `python backend/scripts/ver_modelos.py` |
 | `ADMIN_CONTATO` | Contato exibido nos encaminhamentos |
+| `RETRIEVER` | `tfidf` (padrão) ou `embeddings` (requer `INSTALL_EMBEDDINGS=true` no build) |
+| `LOG_LEVEL` / `LOG_FORMAT` | Nível de log e formato do stdout (`texto` ou `json`) |
+| `LOG_DIR` | Pasta dos arquivos de log (vazio desliga) |
+| `LOG_MENSAGENS` | `false` omite o texto das perguntas/respostas nos arquivos |
+
+## 📊 Logs e monitoramento
+
+Cada mensagem gera uma **decisão** com intenção, confiança, trechos e scores, desfecho, uso do LLM e tempo de cada etapa. Ela é registrada em três lugares:
+
+| Onde | Formato | Para quê |
+| --- | --- | --- |
+| stdout (`docker compose logs -f backend`) | texto legível ou JSON (`LOG_FORMAT`) | Acompanhar em tempo real |
+| `logs/app.log` | JSON por linha, com rotação (10 MB × 5) | Todos os eventos: HTTP, decisões, chamadas à Groq, erros |
+| `logs/decisoes.jsonl` | Uma decisão completa por linha (50 MB × 10) | Análise posterior (script, pandas, jq) |
+| Tabela `decisoes` no Postgres | SQL | Painel e endpoints de métricas |
+
+Toda requisição recebe um `request_id` (devolvido no header `X-Request-ID`), presente em todas as linhas de log dela. Do Open WebUI, o backend recebe e registra apenas os **ids** do usuário e do chat, nunca nome ou e-mail.
+
+**Painel:** http://localhost:8000/painel (informe a `BACKEND_API_KEY`). Mostra volume por hora, desfechos, intenções, latência por etapa, artigos mais citados, as **lacunas** (perguntas sem base ou com baixa confiança, candidatas a novos artigos/sinônimos/treino) e as últimas decisões.
+
+**Endpoints** (com `Authorization: Bearer $BACKEND_API_KEY`):
+
+```bash
+curl -s "localhost:8000/admin/metricas?horas=24" -H "Authorization: Bearer $BACKEND_API_KEY"
+curl -s "localhost:8000/admin/decisoes?desfecho=sem_base&limite=20" -H "Authorization: Bearer $BACKEND_API_KEY"
+```
+
+**Análise offline dos arquivos:**
+
+```bash
+cd backend
+python -m scripts.analisar_logs --arquivo ../logs/decisoes.jsonl --horas 168 --csv decisoes.csv
+# ou com jq: perguntas que ficaram sem base
+jq -r 'select(.desfecho=="sem_base") | .mensagem' ../logs/decisoes.jsonl | sort | uniq -c | sort -rn
+```
+
+## 🧪 Avaliação (seção 6 do PRD)
+
+```bash
+cd backend
+python -m scripts.avaliar                 # 24 casos com a configuração atual
+python -m scripts.avaliar --comparar      # TF-IDF x embeddings, artigo x 1000/200 caracteres
+python -m scripts.avaliar --llm           # com a Groq (precisa de GROQ_API_KEY)
+pytest                                    # testes automatizados
+
+# dentro do Docker (a pasta dados é somente leitura no contêiner):
+docker compose exec backend python -m scripts.avaliar --saida /app/logs/avaliacao
+```
+
+Os resultados caso a caso (planilha) e as métricas (JSON) vão para `dados/resultados/`.
 
 ### Consultar o log de decisões
 

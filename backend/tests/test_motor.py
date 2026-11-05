@@ -38,3 +38,16 @@ def test_respostas_citam_artigo(motor, pergunta, artigo):
     d = motor.responder(pergunta)
     assert d.desfecho == Desfecho.RESPONDIDO
     assert f"Art. {artigo}" in d.resposta
+
+
+def test_pergunta_de_acompanhamento_usa_contexto(motor):
+    d = motor.responder("E no sábado?", ["Em que horário posso fazer obra?"])
+    assert d.desfecho == Desfecho.RESPONDIDO
+    assert d.usou_contexto
+    assert "Art. 5" in d.resposta
+
+
+def test_registra_tempo_por_etapa(motor):
+    d = motor.responder("Quantas vagas de visitante tem?")
+    assert {"regras", "classificacao", "recuperacao"} <= d.etapas_ms.keys()
+    assert d.llm_status == "desligado"

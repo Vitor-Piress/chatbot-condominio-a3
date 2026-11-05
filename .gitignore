@@ -61,5 +61,7 @@ desktop.ini
 # Logs e Arquivos Temporários
 # ==========================================
 *.log
+logs/
+*.jsonl
 tmp/
 temp/

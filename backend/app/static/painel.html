@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Chatbot</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f5f5f3; --surface-1: #fcfcfb; --border: #e3e2de;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #77766f;
+    --series-1: #2a78d6; --track: #eeede9;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2b;
+      --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+      --series-1: #3987e5; --track: #262624;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2b;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --series-1: #3987e5; --track: #262624;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+           padding: 16px; border-bottom: 1px solid var(--border); background: var(--surface-1); }
+  h1 { font-size: 17px; margin: 0; }
+  h2 { font-size: 14px; margin: 0 0 12px; color: var(--text-secondary); font-weight: 600; }
+  .controles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select, input, button { font: inherit; color: inherit; background: var(--surface-0);
+                          border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; }
+  button { cursor: pointer; }
+  main { padding: 16px; max-width: 1200px; margin: 0 auto; display: grid; gap: 16px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-width: 0; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tile .rotulo { color: var(--text-secondary); font-size: 12px; }
+  .tile .valor { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .tile .sub { color: var(--text-muted); font-size: 12px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .barra { display: grid; grid-template-columns: 130px 1fr 56px; align-items: center; gap: 8px; padding: 3px 0; }
+  .barra .nome { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .barra .trilho { height: 14px; background: var(--track); border-radius: 4px; overflow: hidden; }
+  .barra .fill { height: 100%; background: var(--series-1); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .barra .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .barra:hover .fill { filter: brightness(1.15); }
+  .serie { display: flex; align-items: flex-end; gap: 2px; height: 90px; border-bottom: 1px solid var(--border); }
+  .serie .col { flex: 1; background: var(--series-1); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .serie .col:hover { filter: brightness(1.15); }
+  .eixo { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--text-secondary); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tabela { overflow-x: auto; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--text-primary); }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cor, var(--text-muted)); }
+  .vazio, .erro { color: var(--text-muted); padding: 8px 0; }
+  .erro { color: var(--critical); }
+  details summary { cursor: pointer; color: var(--text-secondary); }
+  .muted { color: var(--text-muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Assistente Jardim das Acácias · monitoramento</h1>
+  <div class="controles">
+    <input id="chave" type="password" placeholder="BACKEND_API_KEY" aria-label="Chave da API" size="18">
+    <select id="janela" aria-label="Janela de tempo">
+      <option value="1">Última hora</option>
+      <option value="24" selected>Últimas 24 h</option>
+      <option value="168">Últimos 7 dias</option>
+      <option value="720">Últimos 30 dias</option>
+    </select>
+    <button id="atualizar">Atualizar</button>
+    <span id="status" class="muted"></span>
+  </div>
+</header>
+<main>
+  <section class="tiles" id="tiles"></section>
+
+  <section class="card">
+    <h2>Volume de mensagens por hora</h2>
+    <div id="serie"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Desfechos</h2><div id="desfechos"></div></div>
+    <div class="card"><h2>Intenções classificadas</h2><div id="intencoes"></div></div>
+    <div class="card"><h2>Latência mediana por etapa (ms)</h2><div id="etapas"></div></div>
+    <div class="card"><h2>Artigos mais citados</h2><div id="artigos"></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Lacunas: perguntas sem base ou com baixa confiança</h2>
+    <p class="muted" style="margin-top:-6px">Candidatas a novos artigos, sinônimos ou perguntas de treino.</p>
+    <div class="tabela" id="lacunas"></div>
+  </section>
+
+  <section class="card">
+    <h2>Últimas decisões</h2>
+    <div class="tabela" id="decisoes"></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const DESFECHO = {
+  respondido:      { rotulo: "Respondido",           cor: "var(--good)" },
+  emergencia:      { rotulo: "Emergência",           cor: "var(--critical)" },
+  fora_escopo:     { rotulo: "Fora de escopo",       cor: "var(--serious)" },
+  sem_base:        { rotulo: "Sem base",             cor: "var(--warning)" },
+  baixa_confianca: { rotulo: "Baixa confiança",      cor: "var(--warning)" },
+  sancao_excecao:  { rotulo: "Sanção/exceção",       cor: "var(--serious)" },
+  pedido_humano:   { rotulo: "Pediu atendimento",    cor: "var(--text-muted)" },
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (v) => (v == null ? "—" : (v * 100).toFixed(0) + "%");
+const ms = (v) => (v == null ? "—" : v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString("pt-BR"));
+const badge = (d) => `<span class="badge" style="--cor:${(DESFECHO[d] || {}).cor || "var(--text-muted)"}">${esc((DESFECHO[d] || {}).rotulo || d)}</span>`;
+
+function guardar(k, v) { try { sessionStorage.setItem(k, v); } catch (_) {} }
+function ler(k) { try { return sessionStorage.getItem(k) || ""; } catch (_) { return ""; } }
+
+async function api(path) {
+  const chave = $("chave").value.trim();
+  const r = await fetch(path, { headers: chave ? { Authorization: "Bearer " + chave } : {} });
+  if (r.status === 401) throw new Error("Chave inválida: informe a BACKEND_API_KEY.");
+  if (!r.ok) throw new Error(`Erro ${r.status} em ${path}`);
+  return r.json();
+}
+
+function tiles(m) {
+  const lat = m.latencia_ms || {}, llm = m.llm || {}, q = m.qualidade || {};
+  const itens = [
+    ["Mensagens", (m.total ?? 0).toLocaleString("pt-BR"), `${m.usuarios_distintos ?? 0} usuários`],
+    ["Respondidas", pct(m.taxa_respondido), "com artigo citado"],
+    ["Encaminhadas", pct(m.taxa_encaminhamento), "emergência, fora de escopo, sem base…"],
+    ["Latência mediana", ms(lat.mediana) + " ms", `p90 ${ms(lat.p90)} ms · máx ${ms(lat.max)} ms`],
+    ["Chamadas ao LLM", (llm.chamadas ?? 0).toLocaleString("pt-BR"),
+       llm.chamadas ? `mediana ${ms(llm.latencia_mediana_ms)} ms · erros ${(llm.por_status || {}).erro || 0}` : "modo extrativo"],
+    ["Confiança média", q.confianca_media_respondidos == null ? "—" : q.confianca_media_respondidos.toFixed(2),
+       `similaridade mediana ${q.similaridade_mediana_respondidos ?? "—"}`],
+  ];
+  $("tiles").innerHTML = itens.map(([r, v, s]) =>
+    `<div class="card tile"><div class="rotulo">${r}</div><div class="valor">${v}</div><div class="sub">${esc(s)}</div></div>`).join("");
+}
+
+function barras(el, dados, rotulo = (k) => k, fmt = (v) => v.toLocaleString("pt-BR")) {
+  const pares = Object.entries(dados || {});
+  if (!pares.length) { el.innerHTML = `<div class="vazio">Sem dados na janela.</div>`; return; }
+  const max = Math.max(...pares.map(([, v]) => v || 0)) || 1;
+  const total = pares.reduce((a, [, v]) => a + (v || 0), 0);
+  el.innerHTML = pares.map(([k, v]) => {
+    const dica = `${rotulo(k)}: ${fmt(v)}${total ? ` (${((v / total) * 100).toFixed(0)}%)` : ""}`;
+    return `<div class="barra" title="${esc(dica)}">
+      <span class="nome">${esc(rotulo(k))}</span>
+      <span class="trilho"><span class="fill" style="display:block;width:${(v / max) * 100}%"></span></span>
+      <span class="num">${fmt(v)}</span></div>`;
+  }).join("");
+}
+
+function serie(dados) {
+  const horas = Object.keys(dados || {});
+  if (!horas.length) { $("serie").innerHTML = `<div class="vazio">Sem dados na janela.</div>`; return; }
+  const tot = horas.map((h) => Object.values(dados[h]).reduce((a, b) => a + b, 0));
+  const max = Math.max(...tot) || 1;
+  $("serie").innerHTML = `<div class="serie">${horas.map((h, i) => {
+    const det = Object.entries(dados[h]).map(([d, n]) => `${(DESFECHO[d] || {}).rotulo || d}: ${n}`).join(" · ");
+    return `<div class="col" style="height:${(tot[i] / max) * 100}%" title="${esc(h)}: ${tot[i]} mensagens (${esc(det)})"></div>`;
+  }).join("")}</div><div class="eixo"><span>${esc(horas[0])}</span><span>pico ${max}/h</span><span>${esc(horas.at(-1))}</span></div>`;
+}
+
+function tabelaLacunas(l) {
+  if (!l || !l.length) { $("lacunas").innerHTML = `<div class="vazio">Nenhuma lacuna na janela.</div>`; return; }
+  $("lacunas").innerHTML = `<table><thead><tr><th>Pergunta</th><th>Vezes</th><th>Desfecho</th><th>Intenção</th><th>Confiança</th></tr></thead><tbody>${
+    l.map((x) => `<tr><td>${esc(x.mensagem)}</td><td class="num">${x.vezes}</td><td>${badge(x.desfecho)}</td>
+      <td>${esc(x.intencao || "—")}</td><td class="num">${x.confianca == null ? "—" : x.confianca.toFixed(2)}</td></tr>`).join("")
+  }</tbody></table>`;
+}
+
+function tabelaDecisoes(lista) {
+  if (!lista.length) { $("decisoes").innerHTML = `<div class="vazio">Nenhuma decisão registrada.</div>`; return; }
+  $("decisoes").innerHTML = `<table><thead><tr><th>Quando</th><th>Pergunta</th><th>Desfecho</th><th>Intenção</th><th>Conf.</th><th>Trecho</th><th>ms</th></tr></thead><tbody>${
+    lista.map((d) => {
+      const t = (d.trechos || [])[0];
+      const quando = d.criado_em ? new Date(d.criado_em).toLocaleString("pt-BR") : "—";
+      return `<tr><td class="muted">${esc(quando)}</td>
+        <td><details><summary>${esc(d.mensagem)}</summary><div class="muted" style="white-space:pre-wrap;margin-top:6px">${esc(d.resposta)}</div></details></td>
+        <td>${badge(d.desfecho)}${d.llm_usado ? ' <span class="muted">· LLM</span>' : ""}</td>
+        <td>${esc(d.intencao || "—")}</td>
+        <td class="num">${d.confianca == null ? "—" : d.confianca.toFixed(2)}</td>
+        <td>${t ? `${esc(t.referencia)} <span class="muted">(${t.score})</span>` : "—"}</td>
+        <td class="num">${ms(d.tempo_ms)}</td></tr>`;
+    }).join("")
+  }</tbody></table>`;
+}
+
+async function carregar() {
+  guardar("chave", $("chave").value.trim());
+  guardar("janela", $("janela").value);
+  $("status").textContent = "carregando…";
+  try {
+    const horas = $("janela").value;
+    const [m, lista] = await Promise.all([api(`/admin/metricas?horas=${horas}`), api(`/admin/decisoes?horas=${horas}&limite=30`)]);
+    tiles(m);
+    serie(m.serie_horaria);
+    barras($("desfechos"), m.por_desfecho, (k) => (DESFECHO[k] || {}).rotulo || k);
+    barras($("intencoes"), m.por_intencao);
+    barras($("etapas"), (m.latencia_ms || {}).por_etapa_mediana, (k) => k, (v) => ms(v));
+    barras($("artigos"), m.artigos_mais_citados);
+    tabelaLacunas(m.lacunas);
+    tabelaDecisoes(lista);
+    $("status").textContent = "atualizado " + new Date().toLocaleTimeString("pt-BR");
+  } catch (e) {
+    $("status").innerHTML = `<span class="erro">${esc(e.message)}</span>`;
+  }
+}
+
+$("chave").value = ler("chave");
+if (ler("janela")) $("janela").value = ler("janela");
+$("atualizar").addEventListener("click", carregar);
+$("janela").addEventListener("change", carregar);
+$("chave").addEventListener("keydown", (e) => { if (e.key === "Enter") carregar(); });
+carregar();
+setInterval(carregar, 30000);
+</script>
+</body>
+</html>
