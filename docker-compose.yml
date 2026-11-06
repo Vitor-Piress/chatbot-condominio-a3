@@ -73,6 +73,7 @@ services:
       # O primeiro usuário cadastrado vira administrador.
       ENABLE_SIGNUP: "true"
       DEFAULT_USER_ROLE: pending
+      DEFAULT_MODELS: assistente-acacias
       # Desliga tarefas automáticas que mandariam prompts extras ao "modelo" (poluiriam o log)
       ENABLE_TITLE_GENERATION: "false"
       ENABLE_TAGS_GENERATION: "false"

@@ -173,6 +173,8 @@ Sem `DATABASE_URL` no `.env`, o log vai para `backend/decisoes.db` (SQLite) e os
 | Backend reinicia com erro de conexão ou `database "chatbot" does not exist` | O volume do banco foi criado antes (ou com outra senha), e o script de `docker/postgres/` só roda na primeira vez. Rode `docker compose down -v` e suba de novo. |
 | `/docker-entrypoint-initdb.d/...sh: bad interpreter` | O script ficou com CRLF (clone feito no Windows). Rode `git config core.autocrlf input`, clone de novo dentro do WSL e faça `docker compose down -v`. |
 | Modelo `assistente-acacias` não aparece no Open WebUI | O Open WebUI guarda a conexão no banco no primeiro start, então mudar `BACKEND_API_KEY` depois não tem efeito. Corrija em *Painel de administração → Configurações → Conexões* (URL `http://backend:8000/v1` e a chave) ou zere com `down -v`. |
+| Usuário comum vê "Modelo não selecionado", mas o admin vê o modelo | Falta `DEFAULT_MODELS` no serviço `openwebui` do `docker-compose.yml`. Depois de ajustar, rode `docker compose up -d openwebui` e recarregue a página. |
+| Open WebUI reinicia com `could not translate host name "db"`, mas o backend está saudável | O contêiner perdeu a rede (só tem a interface `lo`). Recrie só ele: `docker compose up -d --force-recreate --no-deps openwebui`. Não apaga dados. |
 | Respostas sempre no modo extrativo, mesmo com `GROQ_API_KEY` | Veja `docker compose logs backend \| grep -i groq`. O modelo de `GROQ_MODEL` pode não estar liberado: liste com `docker compose exec backend python scripts/ver_modelos.py`. |
 | Painel diz "Chave inválida" | Use exatamente o valor de `BACKEND_API_KEY` do `.env`. |
 | Sem permissão para apagar `logs/` | Os arquivos são criados pelo contêiner como root: `sudo rm -rf logs`. |
