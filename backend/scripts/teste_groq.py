@@ -35,7 +35,7 @@ resposta = client.chat.completions.create(
         {"role": "system", "content": prompt_sistema},
         {"role": "user", "content": pergunta_usuario}
     ],
-    model="qwen/qwen3.8-27b", # Modelo super leve e rápido da Meta
+    model=os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b"),
     temperature=0.0,        # Zero criatividade = zero alucinação
     max_tokens=150
 )

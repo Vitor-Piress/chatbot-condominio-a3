@@ -1,0 +1,98 @@
+# rotação dos logs de stdout dos contêineres (docker compose logs)
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_OPENWEBUI_DB}
+      POSTGRES_CHATBOT_DB: ${POSTGRES_CHATBOT_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_OPENWEBUI_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        INSTALL_EMBEDDINGS: ${INSTALL_EMBEDDINGS:-false}
+    restart: unless-stopped
+    logging: *logging
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_CHATBOT_DB}
+      DADOS_DIR: /dados
+      LOG_DIR: /app/logs
+      CHROMA_DIR: /app/chroma_db
+    volumes:
+      - ./dados:/dados:ro
+      - ./logs:/app/logs
+      - ./chroma_db:/app/chroma_db
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:${OPENWEBUI_TAG:-main}
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_OPENWEBUI_DB}
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      WEBUI_NAME: ${WEBUI_NAME:-Assistente Jardim das Acácias}
+      # O backend é exposto ao Open WebUI como um provedor compatível com OpenAI
+      ENABLE_OLLAMA_API: "false"
+      ENABLE_OPENAI_API: "true"
+      OPENAI_API_BASE_URL: http://backend:8000/v1
+      OPENAI_API_KEY: ${BACKEND_API_KEY}
+      # envia X-OpenWebUI-User-Id / Chat-Id ao backend (o log guarda só os ids, não nome/e-mail)
+      ENABLE_FORWARD_USER_INFO_HEADERS: "true"
+      # RF09: cadastro aberto, mas novos usuários ficam pendentes até o admin aprovar.
+      # O primeiro usuário cadastrado vira administrador.
+      ENABLE_SIGNUP: "true"
+      DEFAULT_USER_ROLE: pending
+      DEFAULT_MODELS: assistente-acacias
+      # Desliga tarefas automáticas que mandariam prompts extras ao "modelo" (poluiriam o log)
+      ENABLE_TITLE_GENERATION: "false"
+      ENABLE_TAGS_GENERATION: "false"
+      ENABLE_FOLLOW_UP_GENERATION: "false"
+      ENABLE_AUTOCOMPLETE_GENERATION: "false"
+      ENABLE_SEARCH_QUERY_GENERATION: "false"
+      ENABLE_RETRIEVAL_QUERY_GENERATION: "false"
+      ENABLE_EVALUATION_ARENA_MODELS: "false"
+      ENABLE_WEB_SEARCH: "false"
+    volumes:
+      - openwebui-data:/app/backend/data
+    ports:
+      - "${OPENWEBUI_PORT:-3000}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  openwebui-data:
